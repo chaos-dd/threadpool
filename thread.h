@@ -10,17 +10,18 @@
 
 #include<thread>
 #include<memory.h>
-#include<functional.h>
+#include<functional>
 
-
+class ThreadPool;
 class Thread
 {
-    typedef std::function<void(void)>;
+    friend class ThreadPool;
+    typedef std::function<void(void)> task;
     public:
-        std::thread::id get_id();
-        void join();
-        bool joinable();    
+        void start();
+        void run();
     private:    
         std::shared_ptr<std::thread> pThread;
+        std::shared_ptr<ThreadPool> pThreadPool;
 };
 #endif

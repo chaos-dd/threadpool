@@ -6,31 +6,36 @@
  ************************************************************************/
 
 #include "threadpool.h"
+#include "thread.h"
 
-
-void ThreadPool::start()
+ThreadPool::ThreadPool():poolSize(10),maxQueueSize(20),
+   queSem(0), curQueueSize(0)
 {
-    serv_thread.reset(new std::thread(std::bind(start_in_thread,this)))
+    taskQueue=std::list<task>();
+    threads=std::vector<std::shared_ptr<Thread> >(10);
+}
+void ThreadPool::start()
+{  
+    for(auto ptr: threads)
+       ptr->start();
 }
 
 void ThreadPool::stop()
 {
-    serv_thread.get()->join();
+    bstop=true;
+    taskQueue.clear();
+    queSem.signal();
 }
 
 void ThreadPool::append_task(task t)
 {
-    std::lock_guard<std::mutex> > lg(m_tq);
-    taskQueue.push_back(t);
+    std::lock_guard<std::mutex> lg(mu_tq);
+    if(curQueueSize<maxQueueSize)
+    {
+        curQueueSize++;
+        taskQueue.push_back(t);
+        queSem.signal();
+    }
 }
 
-void ThreadPool::start_in_thread()
-{
-   for(auto ptr: threads)
-       ptr->run();
-    
-   while(stop)
-   {
-       :
-   }
-};
+

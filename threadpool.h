@@ -12,12 +12,38 @@
 #include<functional>
 #include<mutex>
 #include<vector>
+#include<list>
 #include<memory>
-
+#include<condition_variable>
+#include<atomic>
+class Semaphore
+{
+    public:
+        Semaphore(int cnt):count(cnt)
+        {}
+        void wait()
+        {
+            std::unique_lock<std::mutex> lock(mt);
+            if(--count<0)
+                cond.wait(lock);
+        }
+        void signal()
+        {
+            std::lock_guard<std::mutex> lock(mt);
+            count++;
+            cond.notify_one();
+        }
+    private:
+        int count;
+        std::mutex mt;
+        std::condition_variable cond;
+};
 class Thread;
 class ThreadPool
 {
+    friend class Thread;
     typedef std::function<void(void)> task;
+    explicit ThreadPool();
     public:
         void start();
         void stop();
@@ -27,13 +53,15 @@ class ThreadPool
         void start_in_thread();
     private:
         int poolSize;
-        int queueSize;
+        int maxQueueSize;
+        Semaphore queSem;
+        int curQueueSize;
 
+        std::atomic<bool> bstop;
         std::mutex mu_tq;
         std::list<task> taskQueue;
-        std::vector<std::shared_ptr<Thread*> > threads;
+        std::vector<std::shared_ptr<Thread> > threads;
 
-        std::shared_ptr<std::Thread> serv_thread;
 };
 
 
