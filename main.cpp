@@ -53,26 +53,13 @@ int main()
     ThreadPool g_threadPool(3,4);
     g_threadPool.start();
     A a;
-    g_threadPool.append_task(&hello);
-
-
-    //append object method with copy-constructor(value-assignment)    
-    g_threadPool.append_task(std::bind(&A::foo, a, 1));
-    g_threadPool.append_task(std::bind(&A::foo, a, 2));
-    g_threadPool.append_task(std::bind(&A::foo, a, 3));
-    g_threadPool.append_task(std::bind(&A::foo, a, 4));
-    
-    //auto beg = std::chrono::high_resolution_clock().now();    
-
-
-    //std::this_thread::sleep_for(std::chrono::milliseconds(5000));   
-
-    g_threadPool.append_task(&hello);
-    //append_task object method with address assignment, will cause the objects' member increase.
-    g_threadPool.append_task(std::bind(&A::foo, &a, 5));
-    g_threadPool.append_task(std::bind(&A::foo, &a, 6));
-    g_threadPool.append_task(std::bind(&A::foo, &a, 7));
-    g_threadPool.append_task(std::bind(&A::foo, &a, 8));
+    //cout<<(bool)g_threadPool.append_task(&hello)<<endl;
+    cout<<(bool)g_threadPool.append_task(std::bind(&A::foo, a, 1))<<endl;
+   // cout<<(bool)g_threadPool.append_task(&hello);
+    cout<<(bool)g_threadPool.append_task(std::bind(&A::foo, &a, 2))<<endl;
+    cout<<(bool)g_threadPool.append_task(std::bind(&A::foo, &a, 3))<<endl;
+    cout<<(bool)g_threadPool.append_task(std::bind(&A::foo, &a, 4))<<endl;
+    cout<<(bool)g_threadPool.append_task(std::bind(&A::foo, &a, 5))<<endl;
     
     //std::this_thread::sleep_for(std::chrono::seconds(5));
     char temp;

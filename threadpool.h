@@ -46,22 +46,24 @@ class ThreadPool
     public:
         explicit ThreadPool();
         ThreadPool(int _poolSize, int _maxQueueSize);
+        ~ThreadPool();
         void start();
         void stop();
-        void append_task(task t);
+        bool append_task(task t);
 
     private:
-        void start_in_thread();
+        void run_task();
     private:
         int poolSize;
         int maxQueueSize;
-        Semaphore queSem;
-        int curQueueSize;
-
-        std::atomic<bool> bstop;
+       
+        std::mutex mu_stop;
+        std::condition_variable stop_cond;
+        bool bstop;
         std::mutex mu_tq;
+        std::condition_variable task_cond;
         std::list<task> taskQueue;
-        std::vector<std::shared_ptr<Thread> > threads;
+        std::vector<std::thread> threads;
 
 };
 

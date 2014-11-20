@@ -8,41 +8,71 @@
 #include "threadpool.h"
 #include "thread.h"
 
-ThreadPool::ThreadPool():poolSize(10),maxQueueSize(20),
-   queSem(0), curQueueSize(0)
+ThreadPool::ThreadPool():ThreadPool(10,20)
+{
+}
+ThreadPool::ThreadPool(int _poolSize,int _maxQueueSize):poolSize(_poolSize),maxQueueSize(_maxQueueSize),
+    threads(_poolSize)
 {
     taskQueue=std::list<task>();
-    threads=std::vector<std::shared_ptr<Thread> >(poolSize,std::shared_ptr<Thread>(new Thread(this)));
+    for(auto &t:threads)
+        t=std::thread(std::bind(&ThreadPool::run_task,this));
 }
-ThreadPool::ThreadPool(int _poolSize,int _maxQueueSize):poolSize(_poolSize),maxQueueSize(_maxQueueSize),queSem(0),curQueueSize(0)
+ThreadPool::~ThreadPool()
 {
-    taskQueue=std::list<task>();
-    threads=std::vector<std::shared_ptr<Thread> >(poolSize,std::shared_ptr<Thread>(new Thread(this)));
+    for(auto &t:threads)
+        t.detach();
 }
-void ThreadPool::start()
+void ThreadPool::start()    
 {  
-    for(auto ptr: threads)
-       ptr->start();
+    std::unique_lock<std::mutex> ul_stop(mu_stop);
+    if(bstop==true)    
+    {
+        bstop=false;
+       stop_cond.notify_all();
+    }
 }
 
 void ThreadPool::stop()
 {
+    std::unique_lock<std::mutex> ul_stop(mu_stop);
     bstop=true;
-    mu_tq.lock();
-    taskQueue.clear();
-    mu_tq.unlock();
-    queSem.signal();
+    stop_cond.notify_all();
 }
 
-void ThreadPool::append_task(task t)
+bool ThreadPool::append_task(task t)
 {
     std::lock_guard<std::mutex> lg(mu_tq);
-    if(curQueueSize<maxQueueSize)
+    if(taskQueue.size()<maxQueueSize)
     {
-        curQueueSize++;
         taskQueue.push_back(t);
-        queSem.signal();
+        task_cond.notify_one();
+        return true;
     }
+
+    return false;
 }
 
+void ThreadPool::run_task()
+{
+    while(true)
+    {
+        std::unique_lock<std::mutex> ul_tq(mu_tq);
+        task_cond.wait(ul_tq,[this](){
+            return !taskQueue.empty();
+            });  
+        ul_tq.unlock();
 
+        std::unique_lock<std::mutex> ul_stop(mu_stop);
+        while(bstop)
+            stop_cond.wait(ul_stop);
+        ul_stop.unlock();
+        
+        if(!ul_tq.try_lock())
+            continue;  
+        task t=taskQueue.front();
+        taskQueue.pop_front();
+        ul_tq.unlock();
+        t();
+    }
+}
