@@ -19,13 +19,16 @@ ThreadPool::ThreadPool(size_t _poolSize,size_t _maxQueueSize):poolSize(_poolSize
 }
 ThreadPool::~ThreadPool()
 {
+    std::unique_lock<std::mutex> ul(mu);
     exit=true;
+    ul.unlock();
     cond.notify_all();
     for(auto &t:threads)
         t.join();
 }
 void ThreadPool::start()    
 {  
+    std::unique_lock<std::mutex> ul(mu);
     if(bstop==true)    
     {
        bstop=false;
@@ -35,6 +38,7 @@ void ThreadPool::start()
 
 void ThreadPool::stop()
 {
+    std::unique_lock<std::mutex> ul(mu);
     if(bstop==false)
     {
         bstop=true;

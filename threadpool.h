@@ -15,7 +15,6 @@
 #include<list>
 #include<memory>
 #include<condition_variable>
-#include<atomic>
 
 class ThreadPool
 {
@@ -34,8 +33,8 @@ class ThreadPool
         size_t poolSize;
         size_t maxQueueSize;
         
-        std::atomic<bool> exit;
-        std::atomic<bool> bstop;
+        bool exit;
+        bool bstop;
         std::mutex mu;
         std::condition_variable cond;
         std::list<task> taskQueue;
