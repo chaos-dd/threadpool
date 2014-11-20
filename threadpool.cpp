@@ -6,13 +6,12 @@
  ************************************************************************/
 
 #include "threadpool.h"
-#include "thread.h"
-
+#include <iostream>
 ThreadPool::ThreadPool():ThreadPool(10,20)
 {
 }
-ThreadPool::ThreadPool(int _poolSize,int _maxQueueSize):poolSize(_poolSize),maxQueueSize(_maxQueueSize),
-    threads(_poolSize)
+ThreadPool::ThreadPool(size_t _poolSize,size_t _maxQueueSize):poolSize(_poolSize),maxQueueSize(_maxQueueSize),
+   exit(false),bstop(true),threads(_poolSize)
 {
     taskQueue=std::list<task>();
     for(auto &t:threads)
@@ -20,36 +19,37 @@ ThreadPool::ThreadPool(int _poolSize,int _maxQueueSize):poolSize(_poolSize),maxQ
 }
 ThreadPool::~ThreadPool()
 {
+    exit=true;
+    cond.notify_all();
     for(auto &t:threads)
-        t.detach();
+        t.join();
 }
 void ThreadPool::start()    
 {  
-    std::unique_lock<std::mutex> ul_stop(mu_stop);
     if(bstop==true)    
     {
-        bstop=false;
-       stop_cond.notify_all();
+       bstop=false;
+       cond.notify_all();
     }
 }
 
 void ThreadPool::stop()
 {
-    std::unique_lock<std::mutex> ul_stop(mu_stop);
-    bstop=true;
-    stop_cond.notify_all();
+    if(bstop==false)
+    {
+        bstop=true;
+    }
 }
 
 bool ThreadPool::append_task(task t)
 {
-    std::lock_guard<std::mutex> lg(mu_tq);
+    std::lock_guard<std::mutex> lg(mu);
     if(taskQueue.size()<maxQueueSize)
     {
         taskQueue.push_back(t);
-        task_cond.notify_one();
+        cond.notify_one();
         return true;
     }
-
     return false;
 }
 
@@ -57,22 +57,16 @@ void ThreadPool::run_task()
 {
     while(true)
     {
-        std::unique_lock<std::mutex> ul_tq(mu_tq);
-        task_cond.wait(ul_tq,[this](){
-            return !taskQueue.empty();
-            });  
-        ul_tq.unlock();
-
-        std::unique_lock<std::mutex> ul_stop(mu_stop);
-        while(bstop)
-            stop_cond.wait(ul_stop);
-        ul_stop.unlock();
-        
-        if(!ul_tq.try_lock())
-            continue;  
+        std::unique_lock<std::mutex> ul(mu);
+        while( bstop || taskQueue.empty())
+        {
+            cond.wait(ul);
+            if(exit==true)
+                return ; 
+        }
         task t=taskQueue.front();
         taskQueue.pop_front();
-        ul_tq.unlock();
+        ul.unlock();
         t();
     }
 }

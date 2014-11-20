@@ -50,28 +50,43 @@ int main()
 {
     srand(0);
 
-    ThreadPool g_threadPool(3,4);
-    g_threadPool.start();
+    ThreadPool g_threadPool(3,20);
     A a;
-    //cout<<(bool)g_threadPool.append_task(&hello)<<endl;
     cout<<(bool)g_threadPool.append_task(std::bind(&A::foo, a, 1))<<endl;
-   // cout<<(bool)g_threadPool.append_task(&hello);
     cout<<(bool)g_threadPool.append_task(std::bind(&A::foo, &a, 2))<<endl;
     cout<<(bool)g_threadPool.append_task(std::bind(&A::foo, &a, 3))<<endl;
     cout<<(bool)g_threadPool.append_task(std::bind(&A::foo, &a, 4))<<endl;
     cout<<(bool)g_threadPool.append_task(std::bind(&A::foo, &a, 5))<<endl;
     
-    //std::this_thread::sleep_for(std::chrono::seconds(5));
+    g_threadPool.start();
+    
+    cout<<(bool)g_threadPool.append_task(std::bind(&A::foo, a, 1))<<endl;
+    cout<<(bool)g_threadPool.append_task(std::bind(&A::foo, &a, 2))<<endl;
+    cout<<(bool)g_threadPool.append_task(std::bind(&A::foo, &a, 3))<<endl;
+    cout<<(bool)g_threadPool.append_task(std::bind(&A::foo, &a, 4))<<endl;
+    cout<<(bool)g_threadPool.append_task(std::bind(&A::foo, &a, 5))<<endl;
+
+    
+    
     char temp;
     cin >> temp;
     if (temp == 'e')
     {
         g_threadPool.stop();
     }
+   
+    g_threadPool.start();
     
-    //auto end = std::chrono::high_resolution_clock().now();
-    //auto dd = std::chrono::duration_cast<chrono::seconds>(end - beg);
-    //cout << dd.count() << endl;
+    cout<<(bool)g_threadPool.append_task(std::bind(&A::foo, a, 1))<<endl;
+    cout<<(bool)g_threadPool.append_task(std::bind(&A::foo, &a, 2))<<endl;
+    cout<<(bool)g_threadPool.append_task(std::bind(&A::foo, &a, 3))<<endl;
+    cout<<(bool)g_threadPool.append_task(std::bind(&A::foo, &a, 4))<<endl;
+    cout<<(bool)g_threadPool.append_task(std::bind(&A::foo, &a, 5))<<endl;
 
+    //g_threadPool.~ThreadPool();
+    this_thread::sleep_for(chrono::seconds(3));
+
+    //cout<<"threadpool deconstruct"<<endl;
     return 0;
 }
+
