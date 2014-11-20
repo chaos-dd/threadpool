@@ -9,7 +9,7 @@
 #define _THREAD_H
 
 #include<thread>
-#include<memory.h>
+#include<memory>
 #include<functional>
 
 class ThreadPool;
@@ -18,6 +18,7 @@ class Thread
     friend class ThreadPool;
     typedef std::function<void(void)> task;
     public:
+        Thread(ThreadPool * pool);
         void start();
         void run();
     private:    

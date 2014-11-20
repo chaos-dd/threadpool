@@ -12,7 +12,12 @@ ThreadPool::ThreadPool():poolSize(10),maxQueueSize(20),
    queSem(0), curQueueSize(0)
 {
     taskQueue=std::list<task>();
-    threads=std::vector<std::shared_ptr<Thread> >(10);
+    threads=std::vector<std::shared_ptr<Thread> >(poolSize,std::shared_ptr<Thread>(new Thread(this)));
+}
+ThreadPool::ThreadPool(int _poolSize,int _maxQueueSize):poolSize(_poolSize),maxQueueSize(_maxQueueSize),queSem(0),curQueueSize(0)
+{
+    taskQueue=std::list<task>();
+    threads=std::vector<std::shared_ptr<Thread> >(poolSize,std::shared_ptr<Thread>(new Thread(this)));
 }
 void ThreadPool::start()
 {  
@@ -23,7 +28,9 @@ void ThreadPool::start()
 void ThreadPool::stop()
 {
     bstop=true;
+    mu_tq.lock();
     taskQueue.clear();
+    mu_tq.unlock();
     queSem.signal();
 }
 

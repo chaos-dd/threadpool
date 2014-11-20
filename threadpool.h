@@ -43,8 +43,9 @@ class ThreadPool
 {
     friend class Thread;
     typedef std::function<void(void)> task;
-    explicit ThreadPool();
     public:
+        explicit ThreadPool();
+        ThreadPool(int _poolSize, int _maxQueueSize);
         void start();
         void stop();
         void append_task(task t);

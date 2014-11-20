@@ -9,6 +9,13 @@
 #include "thread.h"
 #include <mutex>
 #include "threadpool.h"
+
+
+
+Thread::Thread(ThreadPool *pool)
+{
+    pThreadPool.reset(pool);
+}
 void Thread::start()
 {
     pThread.reset(new std::thread(std::bind(&Thread::run,this)));
